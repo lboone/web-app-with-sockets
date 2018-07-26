@@ -13,6 +13,17 @@ var io = socketIO(server);
 io.on('connection', (socket) => {
     console.log('New client connected');
 
+    socket.emit('newMessage',{
+        from: 'Lloyd',
+        text: 'Hey let\'s do lunch',
+        createdAt: new Date()
+    });
+
+    socket.on('createMessage', (message) => {
+        message.createdAt = new Date();
+        console.log('Create message from client',JSON.stringify(message,undefined,2));
+    });
+
     socket.on('disconnect',() => {
         console.log('Client disconnected');
     });
