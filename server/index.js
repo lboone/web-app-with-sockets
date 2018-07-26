@@ -13,9 +13,30 @@ var io = socketIO(server);
 io.on('connection', (socket) => {
     console.log('New client connected');
 
+    // Send only to the user that connected.
+    socket.emit('newMessage',{
+        from: 'Admin',
+        text: 'Welcome to the chat app',
+        createdAt: new Date().getTime()
+    });
+
+    // Send to everyone except the one who connected.
+    socket.broadcast.emit('newMessage',{
+        from: 'Admin',
+        text: 'New user joined',
+        createdAt: new Date().getTime()
+    });
+
     socket.on('createMessage', (message) => {
         console.log('Create message from client',JSON.stringify(message,undefined,2));
-        io.emit('newMessage',{
+        // io.emit('newMessage',{
+        //     from: message.from,
+        //     text: message.text,
+        //     createdAt: new Date().getTime()
+        // });
+
+        // Send message from user to everyone except the one who sent it.
+        socket.broadcast.emit('newMessage',{
             from: message.from,
             text: message.text,
             createdAt: new Date().getTime()
