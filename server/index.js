@@ -5,7 +5,7 @@ const express = require('express');
 const socketIO = require('socket.io');
 
 const {generateMessage} = require('./utils/message');
-
+const {DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING, DEFAULT_ADMIN_NEW_USER_MESSAGE} = require('./config');
 const publicPath = path.join(__dirname,'../public');
 const app = express();
 
@@ -16,15 +16,15 @@ io.on('connection', (socket) => {
     console.log('New client connected');
 
     // Send only to the user that connected.
-    socket.emit('newMessage',generateMessage('Admin','Welcometo the chat app'));
+    socket.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING));
 
     // Send to everyone except the one who connected.
-    socket.broadcast.emit('newMessage',generateMessage('Admin','New user joined'));
+    socket.broadcast.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_NEW_USER_MESSAGE));
 
-    socket.on('createMessage', (message) => {
-        console.log('Create message from client',JSON.stringify(message,undefined,2));
+    socket.on('createMessage', (message, callback) => {
         // Send message from user to everyone except the one who sent it.
         socket.broadcast.emit('newMessage',generateMessage(message.from,message.text));
+        callback('This is from the server.');
     });
 
     socket.on('disconnect',() => {
