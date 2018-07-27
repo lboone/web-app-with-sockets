@@ -157,6 +157,10 @@
   .message {
     padding: 10px;
   }
+
+  .fromMe {
+    float: right;
+  }
   
   .message__title {
     display: flex;

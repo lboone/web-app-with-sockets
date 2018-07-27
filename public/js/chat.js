@@ -20,7 +20,15 @@ function scrollToBottom() {
 }
 
 socket.on('connect',function () {
-    console.log('Connected to server');
+    var params = jQuery.deparam(window.location.search);
+    socket.emit('join',params, function(err){
+        if(err){
+            window.location.href = '/';
+            alert(err);
+        } else {
+            console.log('No Error:',params);
+        }
+    });
 });
 
 socket.on('disconnect',function () {
@@ -28,16 +36,13 @@ socket.on('disconnect',function () {
 });
 
 socket.on('newMessage',function (message) {
-    // var formatedTime = moment(message.createdAt).format('h:mm a');
-    // var li = jQuery('<li></li>');
-    // li.text(`${message.from} ${formatedTime}: ${message.text}`);
-    // jQuery('#messages').append(li);
 
     var template = jQuery('#message-template').html();
     var formatedTime = moment(message.createdAt).format('h:mm a');
     var html = Mustache.render(template,{
         text:message.text,
         from: message.from,
+        fromMe: message.fromMe == true ? 'fromMe' : '',
         createdAt: formatedTime
     });
 
@@ -51,6 +56,7 @@ socket.on('newLocationMessage',function(message) {
     var html = Mustache.render(template,{
         url:message.url,
         from: message.from,
+        fromMe: message.fromMe == true ? 'fromMe' : '',
         createdAt: formatedTime
     });
 
@@ -80,6 +86,7 @@ locationButton.on('click', function () {
     locationButton.attr('disabled','disabled').text('Sending Location...');
     navigator.geolocation.getCurrentPosition(function (position) {
         socket.emit('createLocationMessage',{
+            from: 'User',
             lat: position.coords.latitude,
             lng: position.coords.longitude
         });

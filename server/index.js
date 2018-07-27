@@ -6,6 +6,7 @@ const socketIO = require('socket.io');
 
 const {generateMessage, generateLocationMessage} = require('./utils/message');
 const {DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING, DEFAULT_ADMIN_NEW_USER_MESSAGE} = require('./config');
+const {isRealString} = require('./utils/validation');
 const publicPath = path.join(__dirname,'../public');
 const app = express();
 
@@ -25,15 +26,25 @@ io.on('connection', (socket) => {
     // Send to everyone except the one who connected.
     socket.broadcast.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_NEW_USER_MESSAGE));
 
+    socket.on('join',(params, callback) => {
+        if(!isRealString(params.name) || !isRealString(params.room)){
+            callback('Name and Room Name are required');
+        }
+        callback();
+    });
     socket.on('createMessage', (message, callback) => {
         // Send message from user to everyone except the one who sent it.
-        io.emit('newMessage',generateMessage(message.from,message.text));
-        //socket.broadcast.emit('newMessage',generateMessage(message.from,message.text));
+        socket.broadcast.emit('newMessage',generateMessage(message.from,message.text));
+        socket.emit('newMessage',generateMessage('Me',message.text,true));
+        // Send message from user to everyone
+        //io.emit('newMessage',generateMessage(message.from,message.text));
+        
         callback();
     });
 
     socket.on('createLocationMessage', (coords) => {
-        socket.broadcast.emit('newLocationMessage', generateLocationMessage('Admin',coords.lat,coords.lng));
+        socket.broadcast.emit('newLocationMessage', generateLocationMessage(coords.from,coords.lat,coords.lng));
+        socket.emit('newLocationMessage', generateLocationMessage('Me',coords.lat,coords.lng,true));
     });
     
 
