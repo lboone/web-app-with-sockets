@@ -5,57 +5,86 @@ const express = require('express');
 const socketIO = require('socket.io');
 
 const {generateMessage, generateLocationMessage} = require('./utils/message');
-const {DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING, DEFAULT_ADMIN_NEW_USER_MESSAGE} = require('./config');
+const {
+        DEFAULT_ADMIN_NAME,
+        DEFAULT_ADMIN_GREETING, 
+        DEFAULT_ADMIN_NEW_USER_MESSAGE,
+        DEFAULT_ADMIN_USER_LEAVE_MESSAGE
+    } = require('./config');
 const {isRealString} = require('./utils/validation');
+const {Users, User} = require('./utils/users');
+
 const publicPath = path.join(__dirname,'../public');
 const app = express();
 
 var server = http.createServer(app);
 var io = socketIO(server);
+var users = new Users();
 
-// io.emit                - goes to everyone including sender
-// socket.emit            - goes only to the sender
-// socket.broadcast.emit  - goes to everyone except the sender
+app.use(express.static(publicPath));
+
+// io.emit                                      - goes to everyone including sender
+// socket.emit                                  - goes only to the sender
+// socket.broadcast.emit                        - goes to everyone except the sender
+// socket.join('The Office Fans')               - join a room
+// socket.leave('The Office Fans')              - leave a room
+// io.to('The Office Fans').emit                - goes to everyone in the room including sender
+// socket.broadcast.to('The Office Fans').emit  - goes to everyone in the room except the sender
+// socket.emit                                  - goes only to the sender
 
 io.on('connection', (socket) => {
     console.log('New client connected');
 
-    // Send only to the user that connected.
-    socket.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING));
-
-    // Send to everyone except the one who connected.
-    socket.broadcast.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_NEW_USER_MESSAGE));
-
     socket.on('join',(params, callback) => {
         if(!isRealString(params.name) || !isRealString(params.room)){
-            callback('Name and Room Name are required');
+            return callback('Name and Room Name are required');
         }
+        params.room = params.room.toLowerCase();
+        socket.join(params.room);
+        users.removeUser(socket.id);
+        users.addUser(new User(socket.id,params.name,params.room));
+        // Emit event to everyone in the room
+        io.to(params.room).emit('updateUserList',users.getUserList(params.room));
+        io.emit('updateRoomList',users.getRoomList());
+
+        // Send only to the user that connected.
+        socket.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING(params.room)));
+
+        // Send to everyone except the one who connected.
+        socket.broadcast.to(params.room).emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_NEW_USER_MESSAGE(params.name)));
+
         callback();
     });
+
     socket.on('createMessage', (message, callback) => {
-        // Send message from user to everyone except the one who sent it.
-        socket.broadcast.emit('newMessage',generateMessage(message.from,message.text));
+        var user = users.getUser(socket.id);
+        socket.broadcast.to(user.room).emit('newMessage',generateMessage(user.name,message.text));
         socket.emit('newMessage',generateMessage('Me',message.text,true));
-        // Send message from user to everyone
-        //io.emit('newMessage',generateMessage(message.from,message.text));
-        
         callback();
     });
 
     socket.on('createLocationMessage', (coords) => {
-        socket.broadcast.emit('newLocationMessage', generateLocationMessage(coords.from,coords.lat,coords.lng));
+        var user = users.getUser(socket.id);
+        socket.broadcast.to(user.room).emit('newLocationMessage', generateLocationMessage(user.name,coords.lat,coords.lng));
         socket.emit('newLocationMessage', generateLocationMessage('Me',coords.lat,coords.lng,true));
     });
     
 
     socket.on('disconnect',() => {
-        console.log('Client disconnected');
+        var user = users.removeUser(socket.id);
+        if( user ) {
+            io.to(user.room).emit('updateUserList',users.getUserList(user.room));
+            io.to(user.room).emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_USER_LEAVE_MESSAGE(user.name)));
+            io.emit('updateRoomList',users.getRoomList());
+        } 
+        // Emit event to everyone in the room
+        
     });
 });
 
 
 
-app.use(express.static(publicPath));
+
 
 // Start the server
 server.listen(port,() => {

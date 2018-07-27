@@ -25,14 +25,30 @@ socket.on('connect',function () {
         if(err){
             window.location.href = '/';
             alert(err);
-        } else {
-            console.log('No Error:',params);
         }
     });
 });
 
 socket.on('disconnect',function () {
     console.log('Disconnected from server');
+});
+
+socket.on('updateUserList',function(users){
+    var ol = jQuery('<ol></ol>');
+    users.forEach(function(user) {
+        ol.append(jQuery('<li></li>').text(user));
+    });
+
+    jQuery('#users').html(ol);
+});
+
+socket.on('updateRoomList',function(rooms){
+    var ol = jQuery('<ol></ol>');
+    rooms.forEach(function(room) {
+        ol.append(jQuery('<li></li>').text(room));
+    });
+
+    jQuery('#rooms').html(ol);
 });
 
 socket.on('newMessage',function (message) {
@@ -62,7 +78,9 @@ socket.on('newLocationMessage',function(message) {
 
     jQuery("#messages").append(html);
     scrollToBottom();
-})
+});
+
+
 
 
 var formMessage = jQuery('[name=message]');
