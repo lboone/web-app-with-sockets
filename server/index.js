@@ -33,6 +33,9 @@ app.use(express.static(publicPath));
 // socket.emit                                  - goes only to the sender
 
 io.on('connection', (socket) => {
+    
+    socket.emit('homepage',users.getRoomList());
+
     socket.on('join',(params, callback) => {
         if(!isRealString(params.name) || !isRealString(params.room)){
             return callback('Name and Room Name are required');
@@ -80,6 +83,7 @@ io.on('connection', (socket) => {
         // Emit event to everyone in the room
         
     });
+
 });
 
 
