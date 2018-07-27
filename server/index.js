@@ -38,9 +38,13 @@ io.on('connection', (socket) => {
             return callback('Name and Room Name are required');
         }
         params.room = params.room.toLowerCase();
-        socket.join(params.room);
         users.removeUser(socket.id);
-        users.addUser(new User(socket.id,params.name,params.room));
+        var user = users.addUser(new User(socket.id,params.name,params.room));
+        if(!user){
+            return callback('Name is already being used in this room');
+        }
+        socket.join(params.room);
+        // users.addUser(new User(socket.id,params.name,params.room));
         io.to(params.room).emit('updateUserList',users.getUserList(params.room));
         io.emit('updateRoomList',users.getRoomList());
         socket.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING(params.room)));

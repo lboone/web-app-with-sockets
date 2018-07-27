@@ -23,6 +23,18 @@ describe('Users', () => {
         expect(users.users[0] === user).toBeTruthy();
     });
 
+    it('should add user if name is not in same room', () => {
+        var user = users.addUser(new User('6','Mike 1','Node Course 2'));
+        expect(user).toBeTruthy();
+        expect(users.users.length).toBe(6);
+    });
+    it('should not add existing user in same room',() => {
+        var user = users.addUser(new User('6','Mike 1','Node Course 1'));
+
+        expect(user).toBe(undefined);
+        expect(users.users.length).toBe(5);
+    });
+
     it('should find user',() => {
         var user = users.getUser('1');
         expect(user.id).toBe('1');

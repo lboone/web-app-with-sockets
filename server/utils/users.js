@@ -5,8 +5,15 @@ class Users {
     }
 
     addUser (user) {
-        this.users.push(user);
-        return user;
+        var uName = user.name.toLowerCase();
+        var uRoom = user.room.toLowerCase();
+        var userS = this.users.filter((user) => user.name.toLowerCase() === uName && user.room.toLowerCase() === uRoom)[0];
+        if (!userS){
+            this.users.push(user);
+            return user;
+        } else {
+            return undefined;
+        }
     }
 
     removeUser (id) {
