@@ -12,6 +12,10 @@ const app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
 
+// io.emit                - goes to everyone including sender
+// socket.emit            - goes only to the sender
+// socket.broadcast.emit  - goes to everyone except the sender
+
 io.on('connection', (socket) => {
     console.log('New client connected');
 
@@ -24,7 +28,7 @@ io.on('connection', (socket) => {
     socket.on('createMessage', (message, callback) => {
         // Send message from user to everyone except the one who sent it.
         socket.broadcast.emit('newMessage',generateMessage(message.from,message.text));
-        callback('This is from the server.');
+        callback();
     });
 
     socket.on('createLocationMessage', (coords) => {
