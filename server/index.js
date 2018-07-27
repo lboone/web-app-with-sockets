@@ -33,8 +33,6 @@ app.use(express.static(publicPath));
 // socket.emit                                  - goes only to the sender
 
 io.on('connection', (socket) => {
-    console.log('New client connected');
-
     socket.on('join',(params, callback) => {
         if(!isRealString(params.name) || !isRealString(params.room)){
             return callback('Name and Room Name are required');
@@ -43,30 +41,28 @@ io.on('connection', (socket) => {
         socket.join(params.room);
         users.removeUser(socket.id);
         users.addUser(new User(socket.id,params.name,params.room));
-        // Emit event to everyone in the room
         io.to(params.room).emit('updateUserList',users.getUserList(params.room));
         io.emit('updateRoomList',users.getRoomList());
-
-        // Send only to the user that connected.
         socket.emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_GREETING(params.room)));
-
-        // Send to everyone except the one who connected.
         socket.broadcast.to(params.room).emit('newMessage',generateMessage(DEFAULT_ADMIN_NAME,DEFAULT_ADMIN_NEW_USER_MESSAGE(params.name)));
-
         callback();
     });
 
     socket.on('createMessage', (message, callback) => {
         var user = users.getUser(socket.id);
-        socket.broadcast.to(user.room).emit('newMessage',generateMessage(user.name,message.text));
-        socket.emit('newMessage',generateMessage('Me',message.text,true));
+        if( user && isRealString(message.text)){
+            socket.broadcast.to(user.room).emit('newMessage',generateMessage(user.name,message.text));
+            socket.emit('newMessage',generateMessage('Me',message.text,true));
+        }
         callback();
     });
 
     socket.on('createLocationMessage', (coords) => {
         var user = users.getUser(socket.id);
-        socket.broadcast.to(user.room).emit('newLocationMessage', generateLocationMessage(user.name,coords.lat,coords.lng));
-        socket.emit('newLocationMessage', generateLocationMessage('Me',coords.lat,coords.lng,true));
+        if(user) {
+            socket.broadcast.to(user.room).emit('newLocationMessage', generateLocationMessage(user.name,coords.lat,coords.lng));
+            socket.emit('newLocationMessage', generateLocationMessage('Me',coords.lat,coords.lng,true));
+        }
     });
     
 

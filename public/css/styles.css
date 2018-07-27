@@ -156,10 +156,12 @@
   
   .message {
     padding: 10px;
+    clear: right;
   }
 
   .fromMe {
     float: right;
+    clear: right;
   }
   
   .message__title {

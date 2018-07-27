@@ -59,7 +59,7 @@ describe('Users', () => {
     it('should return a unique list of rooms',() => {
         var uniqueRooms = users.getRoomList();
         console.log(uniqueRooms);
-        expect(uniqueRooms).toEqual(['Node Course 1','Node Course 2'])
+        expect(uniqueRooms).toEqual(['Node Course 1'.toUpperCase(),'Node Course 2'.toUpperCase()])
     })
 });
 
